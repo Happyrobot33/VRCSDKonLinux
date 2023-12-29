@@ -6,8 +6,12 @@ using HarmonyLib;
 using UnityEngine;
 using VRC.SDK3.Editor.Builder;
 
+//function we are trying to patch is defined like this:
+//public void ExportCurrentSceneResource(bool buildAssetBundle = true, Action<string> onProgress = null, Action<object> onContentProcessed = null)
+//there is a overload with no parameters, we need to avoid it and patch the one with parameters
 [HarmonyPatch(typeof(VRCWorldAssetExporter))]
-[HarmonyPatch("ExportCurrentSceneResource")]
+[HarmonyPatch(nameof(VRCWorldAssetExporter.ExportCurrentSceneResource))]
+[HarmonyPatch(new Type[] {typeof(bool), typeof(Action<string>), typeof(Action<object>)})]
 class ExportCurrentSceneResourcePatch
 {
     static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
@@ -19,7 +23,7 @@ class ExportCurrentSceneResourcePatch
             {
                 if (codes[i].operand.ToString().Contains(".vrcw"))
                 {
-                    Debug.LogWarning("FOUND i = " + i);
+                    Debug.LogWarning($"[VRCSDK-Linux] Patching {codes[i].operand}");
                     i += 3;
                     var str2 = codes[i].operand;
                     i++;
